@@ -31,6 +31,70 @@
     video { width: 100%; height: 180px; border-radius: 10px; background: #000; }
     iframe { width: 100%; height: 180px; border: 0; border-radius: 10px; background: #f7f7f7; }
     a { color: inherit; }
+    img.zoomable { cursor: zoom-in; }
+    .pdf-link { font-weight: 700; }
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.65);
+      z-index: 50;
+    }
+    .lightbox.open { display: flex; }
+    .lightbox__content {
+      width: min(90vw, 1000px);
+      height: min(90vh, 720px);
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .lightbox__toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid #ececec;
+      background: #fafafa;
+    }
+    .lightbox__buttons {
+      display: flex;
+      gap: 8px;
+    }
+    .lightbox__button {
+      border: 1px solid #ddd;
+      background: #fff;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .lightbox__title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .lightbox__stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #111;
+      overflow: auto;
+    }
+    .lightbox__stage img {
+      max-width: 100%;
+      max-height: 100%;
+      transform-origin: center;
+      cursor: zoom-in;
+    }
   </style>
 </head>
 <body>
@@ -107,9 +171,11 @@
 
         if (item.type === "image") {
             mediaEl = document.createElement("img");
+            mediaEl.className = "zoomable";
             mediaEl.loading = "lazy";
             mediaEl.src = item.src;
             mediaEl.alt = item.title || "";
+            mediaEl.addEventListener("click", () => openLightbox(item));
         }
 
         if (item.type === "video") {
@@ -125,7 +191,7 @@
 
             const open = document.createElement("div");
             open.className = "meta";
-            open.innerHTML = `<a href="${item.src}" target="_blank" rel="noopener">PDF’i yeni sekmede aç</a>`;
+            open.innerHTML = `<a class="pdf-link" href="${item.src}" target="_blank" rel="noopener">Open PDF in a new tab</a>`;
             card.appendChild(open);
         }
 
@@ -152,6 +218,87 @@
 
         renderFilters();
         renderGrid();
+
+        const lightbox = document.createElement("div");
+        lightbox.className = "lightbox";
+        lightbox.setAttribute("role", "dialog");
+        lightbox.setAttribute("aria-modal", "true");
+        lightbox.innerHTML = `
+          <div class="lightbox__content">
+            <div class="lightbox__toolbar">
+              <div class="lightbox__title" id="lightbox-title"></div>
+              <div class="lightbox__buttons">
+                <button class="lightbox__button" data-action="zoom-in" type="button">🔍 +</button>
+                <button class="lightbox__button" data-action="zoom-out" type="button">🔍 −</button>
+                <button class="lightbox__button" data-action="reset" type="button">Reset</button>
+                <button class="lightbox__button" data-action="close" type="button">Close</button>
+              </div>
+            </div>
+            <div class="lightbox__stage">
+              <img id="lightbox-image" alt="">
+            </div>
+          </div>
+        `;
+        document.body.appendChild(lightbox);
+
+        const lightboxImage = lightbox.querySelector("#lightbox-image");
+        const lightboxTitle = lightbox.querySelector("#lightbox-title");
+        const lightboxStage = lightbox.querySelector(".lightbox__stage");
+        let zoomLevel = 1;
+
+        function applyZoom() {
+          lightboxImage.style.transform = `scale(${zoomLevel})`;
+          lightboxImage.style.cursor = zoomLevel > 1 ? "zoom-out" : "zoom-in";
+        }
+
+        function openLightbox(item) {
+          zoomLevel = 1;
+          lightboxImage.src = item.src;
+          lightboxImage.alt = item.title || "";
+          lightboxTitle.textContent = item.title || "Image preview";
+          applyZoom();
+          lightbox.classList.add("open");
+        }
+
+        function closeLightbox() {
+          lightbox.classList.remove("open");
+          lightboxImage.src = "";
+        }
+
+        function zoomIn() {
+          zoomLevel = Math.min(zoomLevel + 0.25, 3);
+          applyZoom();
+        }
+
+        function zoomOut() {
+          zoomLevel = Math.max(zoomLevel - 0.25, 0.5);
+          applyZoom();
+        }
+
+        lightbox.addEventListener("click", (event) => {
+          if (event.target === lightbox) closeLightbox();
+        });
+
+        lightbox.querySelectorAll(".lightbox__button").forEach((button) => {
+          button.addEventListener("click", () => {
+            const action = button.dataset.action;
+            if (action === "zoom-in") zoomIn();
+            if (action === "zoom-out") zoomOut();
+            if (action === "reset") { zoomLevel = 1; applyZoom(); }
+            if (action === "close") closeLightbox();
+          });
+        });
+
+        lightboxStage.addEventListener("wheel", (event) => {
+          event.preventDefault();
+          if (event.deltaY < 0) zoomIn();
+          if (event.deltaY > 0) zoomOut();
+        }, { passive: false });
+
+        document.addEventListener("keydown", (event) => {
+          if (!lightbox.classList.contains("open")) return;
+          if (event.key === "Escape") closeLightbox();
+        });
     </script>
 </body>
 </html>
