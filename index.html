@@ -27,12 +27,21 @@
     }
     .title { font-weight: 600; margin: 10px 0 0; font-size: 14px; }
     .meta { color: #666; font-size: 12px; margin-top: 4px; }
-    img { width: 100%; height: 180px; object-fit: cover; border-radius: 10px; display: block; }
+    img { max-width: 100%; height: auto; display: block; }
     video { width: 100%; height: 180px; border-radius: 10px; background: #000; }
     iframe { width: 100%; height: 180px; border: 0; border-radius: 10px; background: #f7f7f7; }
     a { color: inherit; }
     img.zoomable { cursor: zoom-in; }
     .pdf-link { font-weight: 700; }
+    .image-item {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .image-item img {
+      border-radius: 10px;
+    }
     .lightbox {
       position: fixed;
       inset: 0;
@@ -170,12 +179,22 @@
         let mediaEl;
 
         if (item.type === "image") {
+            const imageWrap = document.createElement("div");
+            imageWrap.className = "image-item";
+
             mediaEl = document.createElement("img");
             mediaEl.className = "zoomable";
             mediaEl.loading = "lazy";
             mediaEl.src = item.src;
             mediaEl.alt = item.title || "";
-            mediaEl.addEventListener("click", () => openLightbox(item));
+            imageWrap.appendChild(mediaEl);
+
+            const title = document.createElement("div");
+            title.className = "title";
+            title.textContent = item.title || item.src;
+            imageWrap.appendChild(title);
+
+            return imageWrap;
         }
 
         if (item.type === "video") {
