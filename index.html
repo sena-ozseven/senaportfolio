@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sena's Portfolio</title>
+    <style>
+    :root { --gap: 14px; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
+    header { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+    h1 { margin: 0; font-size: 20px; }
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+    button { padding: 8px 10px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 8px; }
+    button.active { border-color: #111; }
+    .grid {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: var(--gap);
+    }
+    .card {
+      border: 1px solid #e5e5e5;
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.05);
+      background: #fff;
+    }
+    .title { font-weight: 600; margin: 10px 0 0; font-size: 14px; }
+    .meta { color: #666; font-size: 12px; margin-top: 4px; }
+    img { width: 100%; height: 180px; object-fit: cover; border-radius: 10px; display: block; }
+    video { width: 100%; height: 180px; border-radius: 10px; background: #000; }
+    iframe { width: 100%; height: 180px; border: 0; border-radius: 10px; background: #f7f7f7; }
+    a { color: inherit; }
+  </style>
+</head>
+<body>
+    <header>
+    <h1>SENA'S HTML PORTFOLIO</h1>
+    <div class="filters" id="filters"></div>
+    </header>
+    <main class="grid" id="grid"></main>
+    <script>
+        
+        const items = [
+        { type: "image", src: "assets/images/w1_pencilling_gsenaozseven.png", title: "One Page Comic for my Graphic Novel Class" },
+        { type: "image", src: "assets/images/storyboard1.png", title: "Sketch Storyboard 1" },
+        { type: "image", src: "assets/images/storyboard2.png", title: "Sketch Storyboard 2" },
+        { type: "image", src: "assets/images/kfc.png", title: "Advertisement for KFC (Personal Project)" },
+        { type: "image", src: "assets/images/kapak1.png", title: "Kemgöz Apartmanı Cover Design" },
+        { type: "image", src: "assets/images/kemgoz-poster.png", title: "Poster Design - Kemgöz Apartmanı" },
+        { type: "image", src: "assets/images/canavarng.png", title: "Character Design - Kemgöz Apartmanı - Jeotermal Canavarı" },
+        { type: "image", src: "assets/images/veganbirimkapak.png", title: "Vegan Birim Presentation Cover" },
+        { type: "image", src: "assets/images/IMG_0489.png", title: "Personal 1-Page Comic Illustration" },
+        { type: "image", src: "assets/images/IMG_0178.png", title: "Illustration" },
+        { type: "image", src: "assets/images/IMG_0110.png", title: "Illustration" },
+        { type: "image", src: "assets/images/ham2.png", title: "Illustration" },
+        { type: "image", src: "assets/images/filmposterleri.png", title: "Film Poster" },
+        { type: "image", src: "assets/images/fil-ogrenci-karti.jpg", title: "'Fil' Student Card" },
+        { type: "image", src: "assets/images/walking.png", title: "Animation Sketch" },
+        { type: "image", src: "assets/images/dünya1.png", title: "Vegan Birim Social Media Post" },
+        { type: "image", src: "assets/images/çzgiroman1.jpg", title: "Comic Page" },
+        { type: "image", src: "assets/images/character_design.png", title: "Character Design" },
+        { type: "image", src: "assets/images/character_design_composition.png", title: "Character Design Composition" },
+        { type: "image", src: "assets/images/ai-generated-polished-design.png", title: "Prompted AI Design - Polished with Procreate afterwards" },
+        { type: "image", src: "assets/images/fairy.png", title: "Illustration" },
+        { type: "image", src: "assets/images/me.png", title: "Illustration" },
+        { type: "image", src: "assets/images/her.png", title: "Illustration" },
+        { type: "image", src: "assets/images/snake.png", title: "Illustration" },
+        { type: "image", src: "assets/images/world.png", title: "Illustration" },
+        { type: "image", src: "assets/images/cover-book.png", title: "Book Cover" },
+        { type: "image", src: "assets/images/cover-page.png", title: "Book Page Design" },
+        { type: "image", src: "assets/images/1.2.png", title: "Book Design Sketches" },
+        { type: "pdf",   src: "assets/pdfs/dunya.pdf", title: "Dünya Magazine" },
+        { type: "pdf",   src: "assets/pdfs/final.pdf", title: "Film Design" },
+        { type: "pdf",   src: "assets/pdfs/TIRSIK-SUCHT-EIN-WG-HAUS.pdf", title: "German Comic for my Germany Class" },
+        ];
+
+
+        const grid = document.getElementById("grid");
+        const filters = document.getElementById("filters");
+
+        const filterDefs = [
+        { key: "all", label: "All" },
+        { key: "image", label: "Images" },
+        { key: "video", label: "Videos" },
+        { key: "pdf", label: "PDFs" },
+        ];
+
+        let activeFilter = "all";
+
+        function renderFilters() {
+        filters.innerHTML = "";
+        for (const f of filterDefs) {
+            const btn = document.createElement("button");
+            btn.textContent = f.label;
+            btn.className = (activeFilter === f.key) ? "active" : "";
+            btn.onclick = () => { activeFilter = f.key; renderFilters(); renderGrid(); };
+            filters.appendChild(btn);
+        }
+        }
+
+        function cardFor(item) {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        let mediaEl;
+
+        if (item.type === "image") {
+            mediaEl = document.createElement("img");
+            mediaEl.loading = "lazy";
+            mediaEl.src = item.src;
+            mediaEl.alt = item.title || "";
+        }
+
+        if (item.type === "video") {
+            mediaEl = document.createElement("video");
+            mediaEl.controls = true;
+            mediaEl.src = item.src;
+        }
+
+        if (item.type === "pdf") {
+            // Basit gösterim: iframe ile önizleme + ayrıca açma linki
+            mediaEl = document.createElement("iframe");
+            mediaEl.src = item.src;
+
+            const open = document.createElement("div");
+            open.className = "meta";
+            open.innerHTML = `<a href="${item.src}" target="_blank" rel="noopener">PDF’i yeni sekmede aç</a>`;
+            card.appendChild(open);
+        }
+
+        const title = document.createElement("div");
+        title.className = "title";
+        title.textContent = item.title || item.src;
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.textContent = item.type.toUpperCase();
+
+        card.appendChild(mediaEl);
+        card.appendChild(title);
+        card.appendChild(meta);
+
+        return card;
+        }
+
+        function renderGrid() {
+        grid.innerHTML = "";
+        const shown = items.filter(x => activeFilter === "all" ? true : x.type === activeFilter);
+        for (const item of shown) grid.appendChild(cardFor(item));
+        }
+
+        renderFilters();
+        renderGrid();
+    </script>
+</body>
+</html>
